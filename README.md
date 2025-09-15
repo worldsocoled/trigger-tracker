@@ -45,9 +45,11 @@ Trigger saved at: 2025-09-14 14:32
 
 
 Later, you can generate reports:
-
 ```
+
+```bash
 $ python main.py --stats
+```
 
 ## Installation
 
