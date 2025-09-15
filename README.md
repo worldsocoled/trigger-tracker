@@ -11,6 +11,12 @@ A personal tool for understanding emotional triggers and building self-awareness
 - **💾 Data Export**: Download your data as CSV or JSON for backup or analysis
 - **🎨 Clean Interface**: Modern, supportive design that feels safe and welcoming
 
+## 📸 Screenshots
+
+![Dashboard Overview](screenshots/TriggerTrackerAppUI.png)
+*Your personal dashboard with key metrics and recent activity*
+
+
 ## 🚀 Quick Start
 
 ### Prerequisites
