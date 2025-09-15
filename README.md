@@ -25,7 +25,10 @@ This project demonstrates practical Python skills, data handling, modular design
 ✅ Clean, intuitive command-line interface  
 ✅ Local data storage with privacy in mind
 
-## Demo
+
+## Demo  
+
+Here’s an example of logging a trigger:  
 
 ```bash
 $ python main.py
@@ -39,13 +42,12 @@ How did you feel?: Stressed, tense
 Intensity (1-10): 7  
 
 Trigger saved at: 2025-09-14 14:32
-```
+
 
 Later, you can generate reports:
 
-```bash
-$ python main.py --stats
 ```
+$ python main.py --stats
 
 ## Installation
 
