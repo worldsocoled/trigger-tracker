@@ -13,7 +13,7 @@ A personal tool for understanding emotional triggers and building self-awareness
 
 ## 📸 Screenshots
 
-![Dashboard Overview](screenshots/TriggerTrackerAppUI.png)
+![Dashboard Overview](TriggerTrackerAppUI.png)
 *Your personal dashboard with key metrics and recent activity*
 
 
