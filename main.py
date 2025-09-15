@@ -1,141 +1,171 @@
-# main.py
-import os
+#!/usr/bin/env python3
+"""
+Trigger Tracker - CLI
+Log detailed trigger entries and analyze patterns.
+
+Run: python main.py
+"""
+
 import json
+import os
+import sys
 from datetime import datetime
-
-import pandas as pd
-import streamlit as st
-
-from utils import helpers, storage, stats, export_utils
-
-# ---------------- Setup ---------------- #
-st.set_page_config(page_title="Trigger Tracker", page_icon="🧠", layout="wide")
-st.title("🧠 Trigger Tracker")
-st.markdown("Log detailed trigger entries (what, before, after, feelings) and view patterns over time.")
+from utils.helpers import now_iso, read_json, write_json, prompt_int
+from utils.stats import (
+    average_emotion_scores,
+    count_triggers,
+    triggers_per_hour,
+    triggers_per_day,
+)
+from utils.export import export_csv
 
 DATA_DIR = "data"
-JSON_FILE = os.path.join(DATA_DIR, "triggers.json")
-CSV_FILE = os.path.join(DATA_DIR, "triggers.csv")
+DATA_FILE = os.path.join(DATA_DIR, "triggers.json")
+REPORTS_DIR = "reports"
 
-os.makedirs(DATA_DIR, exist_ok=True)
 
-# Initialize storage files if missing
-storage.ensure_files(JSON_FILE, CSV_FILE)
+def ensure_dirs():
+    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(REPORTS_DIR, exist_ok=True)
 
-# ---------------- Entry Form ---------------- #
-with st.form("entry_form", clear_on_submit=True):
-    st.header("Log a new trigger")
-    what = st.text_input("What was the trigger? (brief)")
-    before = st.text_area("What happened just *before* the trigger? (context)")
-    after = st.text_area("What happened *after* the trigger? (reaction / response)")
-    # Emotion inputs - numeric scales
-    st.subheader("Rate emotions (1 = low, 10 = high)")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        anxiety = st.slider("Anxiety", 1, 10, 5)
-        sadness = st.slider("Sadness", 1, 10, 3)
-    with col2:
-        anger = st.slider("Anger", 1, 10, 2)
-        shame = st.slider("Shame", 1, 10, 1)
-    with col3:
-        stress = st.slider("Stress", 1, 10, 6)
-        other_label = st.text_input("Other emotion label (optional)")
-        other_value = st.slider("Other emotion intensity", 1, 10, 1) if other_label else 0
 
-    overall = st.slider("Overall intensity (1-10)", 1, 10, 5)
-    notes = st.text_area("Other notes (optional)")
+def prompt_entry():
+    print("\n--- New Trigger Entry ---")
+    trigger = input("1) What was the trigger? ").strip()
+    while not trigger:
+        print("Trigger cannot be empty.")
+        trigger = input("1) What was the trigger? ").strip()
 
-    submitted = st.form_submit_button("Save entry")
-    if submitted:
-        if not what.strip():
-            st.error("Please describe the trigger (short description).")
+    before = input("2) What happened immediately before the trigger? ").strip()
+    after = input("3) What happened immediately after the trigger? ").strip()
+
+    print("\n4) Rate these feelings from 0 (none) to 10 (very strong). Press Enter to accept 0.")
+    anxiety = prompt_int("   Anxiety (0-10): ", 0, 10)
+    sadness = prompt_int("   Sadness (0-10): ", 0, 10)
+    anger = prompt_int("   Anger (0-10): ", 0, 10)
+    shame = prompt_int("   Shame (0-10): ", 0, 10)
+    relief = prompt_int("   Relief (0-10): ", 0, 10)
+
+    intensity = prompt_int("\n5) Overall intensity (1-10): ", 1, 10)
+
+    notes = input("\n6) Additional notes (optional): ").strip()
+
+    entry = {
+        "id": int(datetime.utcnow().timestamp() * 1000),
+        "timestamp": now_iso(),
+        "trigger": trigger,
+        "before": before,
+        "after": after,
+        "feelings": {
+            "anxiety": anxiety,
+            "sadness": sadness,
+            "anger": anger,
+            "shame": shame,
+            "relief": relief,
+        },
+        "intensity": intensity,
+        "notes": notes,
+    }
+
+    print("\n--- Entry summary ---")
+    print(f"Trigger : {entry['trigger']}")
+    print(f"Before  : {entry['before']}")
+    print(f"After   : {entry['after']}")
+    print("Feelings:")
+    for k, v in entry["feelings"].items():
+        print(f"  - {k.capitalize():7}: {v}")
+    print(f"Intensity: {entry['intensity']}")
+    if entry["notes"]:
+        print(f"Notes    : {entry['notes']}")
+    else:
+        print("Notes    : (none)")
+
+    confirm = input("\nSave this entry? (Y/n) ").strip().lower()
+    if confirm in ("", "y", "yes"):
+        return entry
+    print("Entry discarded.")
+    return None
+
+
+def add_entry(entry):
+    data = read_json(DATA_FILE)
+    data.append(entry)
+    write_json(DATA_FILE, data)
+    print("Entry saved.")
+
+
+def show_recent(n=10):
+    data = read_json(DATA_FILE)
+    if not data:
+        print("No entries found.")
+        return
+    print(f"\n--- Most recent {min(n, len(data))} entries ---")
+    for e in sorted(data, key=lambda x: x["timestamp"], reverse=True)[:n]:
+        ts = e["timestamp"]
+        trig = e["trigger"]
+        inten = e.get("intensity", "")
+        print(f"{ts} | {trig} | intensity: {inten}")
+
+
+def summary():
+    data = read_json(DATA_FILE)
+    if not data:
+        print("No data available for summary.")
+        return
+    print("\n--- Summary ---")
+    counts = count_triggers(data)
+    print(f"Total entries: {len(data)}")
+    print("\nTop triggers (by count):")
+    for trig, cnt in counts.most_common(10):
+        print(f"  {trig} — {cnt}")
+
+    avg = average_emotion_scores(data)
+    print("\nAverage feelings (0-10):")
+    for k, v in avg.items():
+        print(f"  {k.capitalize():7}: {v:.2f}")
+
+    per_day = triggers_per_day(data)
+    print("\nEntries per day (most recent 10):")
+    for date, cnt in list(per_day.items())[-10:]:
+        print(f"  {date}: {cnt}")
+
+
+def generate_reports():
+    data = read_json(DATA_FILE)
+    if not data:
+        print("No entries to export.")
+        return
+    csv_path = os.path.join(REPORTS_DIR, f"triggers_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
+    export_csv(data, csv_path)
+    print(f"CSV exported: {csv_path}")
+
+
+def interactive_menu():
+    ensure_dirs()
+    while True:
+        print("\n=== Trigger Tracker Menu ===")
+        print("1) Log new trigger")
+        print("2) Show recent entries")
+        print("3) Summary statistics")
+        print("4) Export CSV report")
+        print("5) Exit")
+        choice = input("Select an option (1-5): ").strip()
+        if choice == "1":
+            entry = prompt_entry()
+            if entry:
+                add_entry(entry)
+        elif choice == "2":
+            show_recent(10)
+        elif choice == "3":
+            summary()
+        elif choice == "4":
+            generate_reports()
+        elif choice == "5":
+            print("Goodbye.")
+            sys.exit(0)
         else:
-            timestamp = helpers.format_timestamp()
-            entry = {
-                "Timestamp": timestamp,
-                "What": what.strip(),
-                "Before": before.strip(),
-                "After": after.strip(),
-                "Anxiety": int(anxiety),
-                "Sadness": int(sadness),
-                "Anger": int(anger),
-                "Shame": int(shame),
-                "Stress": int(stress),
-                "OverallIntensity": int(overall),
-                "Notes": notes.strip()
-            }
-            if other_label:
-                entry[other_label] = int(other_value)
-            storage.append_entry_json(JSON_FILE, entry)
-            storage.append_entry_csv(CSV_FILE, entry)
-            st.success("Entry saved.")
+            print("Invalid selection. Enter a number from 1 to 5.")
 
-# ---------------- Load Data ---------------- #
-df = storage.load_dataframe(JSON_FILE)
 
-# ---------------- Display & Controls ---------------- #
-st.sidebar.header("Quick actions")
-if st.sidebar.button("Refresh data"):
-    st.experimental_rerun()
-
-st.sidebar.markdown("### Export")
-csv_bytes = export_utils.df_to_csv_bytes(df)
-json_bytes = export_utils.json_file_bytes(JSON_FILE)
-st.sidebar.download_button("Download CSV", csv_bytes, file_name="triggers_export.csv", mime="text/csv")
-st.sidebar.download_button("Download JSON", json_bytes, file_name="triggers_export.json", mime="application/json")
-
-st.sidebar.markdown("---")
-if st.sidebar.button("Clear all data (irreversible)"):
-    storage.clear_data(JSON_FILE, CSV_FILE)
-    st.success("All data cleared. Reloading...")
-    st.experimental_rerun()
-
-# ---------------- Data Table ---------------- #
-st.header("Recent entries")
-if df.empty:
-    st.info("No entries yet. Use the form above to log a trigger.")
-else:
-    st.dataframe(df.sort_values("Timestamp", ascending=False).reset_index(drop=True))
-
-# ---------------- Analytics ---------------- #
-st.header("Analytics & Patterns")
-if not df.empty:
-    colA, colB = st.columns([2, 1])
-
-    with colA:
-        st.subheader("Daily entry counts")
-        daily = stats.daily_trigger_count(df)
-        st.line_chart(daily)
-
-        st.subheader("Average overall intensity (by day)")
-        avg_daily = df.copy()
-        avg_daily["Date"] = pd.to_datetime(avg_daily["Timestamp"]).dt.date
-        avg_by_day = avg_daily.groupby("Date")["OverallIntensity"].mean()
-        st.line_chart(avg_by_day)
-
-    with colB:
-        st.subheader("Emotion summary (most recent 30)")
-        recent = df.tail(30)
-        emotion_cols = stats.get_emotion_columns(recent)
-        if emotion_cols:
-            emotion_summary = recent[emotion_cols].mean().round(2)
-            st.table(emotion_summary)
-        else:
-            st.write("No emotion data found.")
-
-    st.subheader("Top triggers")
-    top = stats.top_triggers(df, top_n=8)
-    st.table(top)
-
-    st.subheader("Patterns: frequent triggers by hour or weekday")
-    hour_patterns = stats.triggers_by_hour_pattern(df, threshold=2)
-    weekday_patterns = stats.triggers_by_weekday_pattern(df, threshold=2)
-    st.write("By hour (trigger @ hour -> count):", hour_patterns or "None above threshold")
-    st.write("By weekday (trigger @ weekday -> count):", weekday_patterns or "None above threshold")
-
-# ---------------- Single-entry inspector ---------------- #
-st.header("Inspect an entry")
-if not df.empty:
-    idx = st.number_input("Enter row index (0 - newest)", min_value=0, max_value=len(df)-1, value=0)
-    entry = df.sort_values("Timestamp", ascending=False).reset_index(drop=True).loc[idx]
-    st.markdown(f"**Timestamp:** {entry['Timest]()
+if __name__ == "__main__":
+    interactive_menu()
