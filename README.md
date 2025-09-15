@@ -1,8 +1,8 @@
 # Trigger Tracker
 
-**Trigger Tracker** is a Python-based application designed to help users monitor and log personal triggers throughout the day. The goal is to identify patterns and gain insights that can support mental health management and therapy sessions. This project showcases practical Python skills, data handling, and simple data visualization.
+**Trigger Tracker** is a Python-based application designed to help users log and reflect on their personal triggers throughout the day. By capturing details such as the trigger itself, surrounding events, and emotional responses, the app makes it easier to identify patterns and share insights with a therapist.
 
----
+This project demonstrates practical Python skills, data handling, modular design, and data visualization.
 
 ## Table of Contents
 - [Features](#features)
@@ -13,111 +13,115 @@
 - [Technologies](#technologies)
 - [Future Improvements](#future-improvements)
 - [License](#license)
-
----
+- [Contact](#contact)
 
 ## Features
-- Log triggers in real-time with timestamps.
-- Categorize triggers by type or intensity.
-- View daily and weekly patterns.
-- Export data for therapist review.
-- Simple and intuitive terminal-based interface.
-- Local data storage with optional CSV export.
 
----
+✅ Log triggers in real time with timestamps  
+✅ Record context: *what happened before, during, and after*  
+✅ Track emotional responses and intensity levels  
+✅ View daily/weekly summaries and stats  
+✅ Export logs to CSV for therapist review  
+✅ Clean, intuitive command-line interface  
+✅ Local data storage with privacy in mind
 
 ## Demo
-Here's an example of how the program works:
 
 ```bash
 $ python main.py
+
 Welcome to Trigger Tracker!
-Enter a trigger you experienced: Anxiety at work
-Recorded at: 2025-09-14 14:32
+
+Enter the trigger: Anxiety at work  
+What happened before?: Boss gave unexpected feedback  
+What happened after?: Felt overwhelmed, avoided coworkers  
+How did you feel?: Stressed, tense  
+Intensity (1-10): 7  
+
+Trigger saved at: 2025-09-14 14:32
 ```
 
-Later, you can view all logged triggers or generate a summary report.
+Later, you can generate reports:
 
----
+```bash
+$ python main.py --stats
+```
 
 ## Installation
 
 1. Clone the repository:
 ```bash
 git clone https://github.com/YOUR_USERNAME/trigger-tracker.git
-```
-
-2. Navigate to the project directory:
-```bash
 cd trigger-tracker
 ```
 
-3. (Optional) Create a virtual environment:
+2. (Optional) Create a virtual environment:
 ```bash
 python -m venv venv
-source venv/bin/activate  # macOS/Linux
-venv\Scripts\activate     # Windows
+source venv/bin/activate   # macOS/Linux
+venv\Scripts\activate      # Windows
 ```
 
-4. Install required dependencies (if any):
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
----
-
 ## Usage
 
-Run the program with Python:
+Run the program:
 ```bash
 python main.py
 ```
 
-Follow the prompts to log triggers. Data will be stored locally and can be exported to CSV for analysis or review.
+Follow the prompts to log a trigger. Data is stored in `data/triggers.csv`.
 
----
+To see stats:
+```bash
+python main.py --stats
+```
+
+To export your logs for a therapist:
+```bash
+python main.py --export
+```
 
 ## Folder Structure
 
 ```
 trigger_tracker/
 │
-├── main.py           # Main program
-├── utils/            # Helper modules
-│   └── ... 
-├── data/             # Stored logs and exports
-├── README.md         # Project documentation
-└── requirements.txt  # Dependencies
+├── main.py            # Main CLI program
+├── utils/             # Helper modules
+│   ├── helpers.py     # Input/output helpers
+│   ├── stats.py       # Pattern analysis and reports
+│   └── export.py      # CSV export functionality
+├── data/              # Stored logs and exported data
+├── README.md          # Project documentation
+└── requirements.txt   # Dependencies
 ```
-
----
 
 ## Technologies
 
 - Python 3.x
-- CSV / JSON for data storage
-- Optional: matplotlib or seaborn for data visualization
-
----
+- pandas (data handling)
+- matplotlib / seaborn (visualization)
+- CSV/JSON for storage
 
 ## Future Improvements
 
-- Add GUI interface with Tkinter or PyQt for ease of use.
-- Include automated pattern detection and visualization.
-- Integrate with mobile apps for real-time logging.
-- Add password protection or encryption for sensitive data.
-
----
+- Add GUI with Tkinter or PyQt
+- Mobile-friendly app for real-time logging
+- Encrypted storage for sensitive data
+- AI-powered pattern detection & insights
 
 ## License
 
-This project is licensed under the MIT License. See LICENSE for details.
-
----
+This project is licensed under the MIT License. See the LICENSE file for details.
 
 ## Contact
 
-- Email: worldsocoledwebartistry@gmail.com
-- LinkedIn: linkedin.com/in/nichole-higgins423
-  
+📧 **Email:** worldsocoledwebartistry@gmail.com  
+💼 **LinkedIn:** [linkedin.com/in/nichole-higgins423](https://www.linkedin.com/in/nichole-higgins423/)
+
 Feel free to reach out for questions, feedback, or collaboration opportunities!
